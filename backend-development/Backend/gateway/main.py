@@ -1,0 +1,34 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from controllers.authenticationController import (
+    router as AuthenticationRouter
+)
+
+app = FastAPI()
+
+# CORS
+origins = [
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = origins,
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"]
+)
+
+# REGISTER ROUTERS
+app.include_router(
+    AuthenticationRouter
+)
+
+# HOME ROUTE
+@app.get("/")
+def home():
+
+    return {
+        "message": "Issue Tracking Backend Started"
+    }
