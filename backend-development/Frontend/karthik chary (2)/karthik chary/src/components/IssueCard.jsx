@@ -7,8 +7,17 @@ import { motion } from 'framer-motion';
 import {
   Calendar,
   Tag,
+  Trash2,
   User
 } from 'lucide-react';
+
+import {
+  useAuth
+} from '../context/AuthContext';
+
+import {
+  useIssues
+} from '../context/IssueContext';
 
 import {
   PriorityBadge
@@ -22,10 +31,33 @@ import {
   TiltWrapper
 } from './TiltWrapper';
 
+const STATUSES = [
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED"
+];
 
 export const IssueCard = ({
   issue
 }) => {
+
+  const {
+    user
+  } = useAuth();
+
+  const {
+    updateIssueStatus,
+    deleteIssue
+  } = useIssues();
+
+  const role =
+    String(user?.role || "")
+      .toUpperCase();
+
+  const canVerifyIssue =
+    role === "ADMIN" ||
+    role === "TESTER";
 
   // SAFE USER NAME
   const creatorName =
@@ -36,6 +68,23 @@ export const IssueCard = ({
 
     "Unknown User";
 
+  const handleDelete = async (event) => {
+
+    event.preventDefault();
+
+    event.stopPropagation();
+
+    if (
+      window.confirm(
+        "Delete this issue?"
+      )
+    ) {
+
+      await deleteIssue(
+        issue.id
+      );
+    }
+  };
 
   return (
 
@@ -114,6 +163,51 @@ export const IssueCard = ({
           </p>
 
         </div>
+
+        {canVerifyIssue && (
+
+          <div className="mt-3 flex items-center gap-2 z-30 relative">
+
+            <select
+              value={issue.status || "OPEN"}
+              onChange={(event) =>
+                updateIssueStatus(
+                  issue.id,
+                  event.target.value
+                )
+              }
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+              className="min-w-0 flex-1 rounded-lg border border-white/10 bg-brand-dark/90 px-2 py-1.5 text-[11px] font-semibold text-gray-200 outline-none focus:border-brand-secondary/50"
+            >
+
+              {STATUSES.map(status => (
+
+                <option
+                  key={status}
+                  value={status}
+                >
+
+                  {status}
+
+                </option>
+              ))}
+
+            </select>
+
+            <button
+              onClick={handleDelete}
+              className="rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"
+              title="Delete issue"
+            >
+
+              <Trash2 size={13} />
+
+            </button>
+
+          </div>
+        )}
 
         {/* FOOTER */}
         <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-3 z-20">

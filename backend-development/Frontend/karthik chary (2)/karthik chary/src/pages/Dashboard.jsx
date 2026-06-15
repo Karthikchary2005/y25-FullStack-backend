@@ -36,6 +36,18 @@ const Dashboard = () => {
   const { user } =
     useAuth();
 
+  const canViewAllIssues = () => {
+
+    const role =
+      String(user?.role || "")
+        .toUpperCase();
+
+    return (
+      role === "ADMIN" ||
+      role === "TESTER"
+    );
+  };
+
   // LOAD ISSUES
   useEffect(() => {
 
@@ -55,8 +67,8 @@ const Dashboard = () => {
 
       let response;
 
-      // ADMIN
-      if(user?.role === "ADMIN") {
+      // ADMIN AND TESTER
+      if(canViewAllIssues()) {
 
         response =
           await axios.get(

@@ -7,8 +7,17 @@ import { motion } from 'framer-motion';
 import {
   Calendar,
   Tag,
+  Trash2,
   User
 } from 'lucide-react';
+
+import {
+  useAuth
+} from '../context/AuthContext';
+
+import {
+  useIssues
+} from '../context/IssueContext';
 
 import {
   StatusBadge
@@ -22,10 +31,49 @@ import {
   formatRelativeTime
 } from '../utils/dateUtils';
 
+const STATUSES = [
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED"
+];
 
 export const IssueTable = ({
   issues = []
 }) => {
+
+  const {
+    user
+  } = useAuth();
+
+  const {
+    updateIssueStatus,
+    deleteIssue
+  } = useIssues();
+
+  const role =
+    String(user?.role || "")
+      .toUpperCase();
+
+  const canVerifyIssue =
+    role === "ADMIN" ||
+    role === "TESTER";
+
+  const handleDelete = async (
+    issueId
+  ) => {
+
+    if (
+      window.confirm(
+        "Delete this issue?"
+      )
+    ) {
+
+      await deleteIssue(
+        issueId
+      );
+    }
+  };
 
   return (
 
@@ -79,6 +127,15 @@ export const IssueTable = ({
               Created
 
             </th>
+
+            {canVerifyIssue && (
+
+              <th className="py-4 px-5 text-right">
+
+                Actions
+
+              </th>
+            )}
 
           </tr>
 
@@ -213,6 +270,56 @@ export const IssueTable = ({
                   </div>
 
                 </td>
+
+                {canVerifyIssue && (
+
+                  <td className="py-4.5 px-5">
+
+                    <div className="flex items-center justify-end gap-2">
+
+                      <select
+                        value={issue.status || "OPEN"}
+                        onChange={(event) =>
+                          updateIssueStatus(
+                            issue.id,
+                            event.target.value
+                          )
+                        }
+                        className="rounded-lg border border-white/10 bg-brand-dark px-2 py-1.5 text-[11px] font-semibold text-gray-200 outline-none focus:border-brand-secondary/50"
+                      >
+
+                        {STATUSES.map(status => (
+
+                          <option
+                            key={status}
+                            value={status}
+                          >
+
+                            {status}
+
+                          </option>
+                        ))}
+
+                      </select>
+
+                      <button
+                        onClick={() =>
+                          handleDelete(
+                            issue.id
+                          )
+                        }
+                        className="rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-400 transition-colors hover:bg-red-500/20"
+                        title="Delete issue"
+                      >
+
+                        <Trash2 size={13} />
+
+                      </button>
+
+                    </div>
+
+                  </td>
+                )}
 
               </motion.tr>
             );

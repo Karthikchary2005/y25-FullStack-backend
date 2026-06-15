@@ -25,6 +25,32 @@ export const IssueProvider = ({
   const { user } =
     useAuth();
 
+  const canViewAllIssues = () => {
+
+    const role =
+      String(user?.role || "")
+        .toUpperCase();
+
+    return (
+      role === "ADMIN" ||
+      role === "TESTER"
+    );
+  };
+
+  const authHeaders = () => {
+
+    const token =
+      localStorage.getItem(
+        "token"
+      );
+
+    return token
+      ? {
+          Token: token
+        }
+      : {};
+  };
+
   // LOAD ISSUES
   useEffect(() => {
 
@@ -44,8 +70,8 @@ export const IssueProvider = ({
 
       let response;
 
-      // ADMIN GETS ALL ISSUES
-      if(user?.role === "ADMIN") {
+      // ADMIN AND TESTER GET ALL ISSUES
+      if(canViewAllIssues()) {
 
         response =
           await axios.get(
@@ -106,6 +132,10 @@ export const IssueProvider = ({
             priority,
 
             createdBy: user.id
+          },
+
+          {
+            headers: authHeaders()
           }
         );
 
@@ -118,6 +148,46 @@ export const IssueProvider = ({
     } catch(error) {
 
       console.log(error);
+    }
+  };
+
+  // UPDATE ISSUE
+  const updateIssue = async (
+
+    issueId,
+
+    data
+
+  ) => {
+
+    try {
+
+      const response =
+        await axios.put(
+
+          `http://127.0.0.1:8000/authservice/updateissue/${issueId}`,
+
+          data,
+
+          {
+            headers: authHeaders()
+          }
+        );
+
+      console.log(response.data);
+
+      await loadIssues();
+
+      return response.data;
+
+    } catch(error) {
+
+      console.log(error);
+
+      return {
+        code: 500,
+        message: "Issue update failed"
+      };
     }
   };
 
@@ -139,6 +209,10 @@ export const IssueProvider = ({
 
           {
             status
+          },
+
+          {
+            headers: authHeaders()
           }
         );
 
@@ -161,7 +235,11 @@ export const IssueProvider = ({
 
       await axios.delete(
 
-        `http://127.0.0.1:8000/authservice/deleteissue/${issueId}`
+        `http://127.0.0.1:8000/authservice/deleteissue/${issueId}`,
+
+        {
+          headers: authHeaders()
+        }
       );
 
       await loadIssues();
@@ -184,6 +262,8 @@ export const IssueProvider = ({
         loadIssues,
 
         createIssue,
+
+        updateIssue,
 
         updateIssueStatus,
 

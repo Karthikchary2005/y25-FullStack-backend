@@ -14,7 +14,10 @@ import axios from 'axios';
 
 import {
   ArrowLeft,
-  Trash2
+  Edit3,
+  Save,
+  Trash2,
+  X
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +27,31 @@ import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
 
 import MotionWrapper from '../components/MotionWrapper';
+
+const CATEGORIES = [
+  "UI Bug",
+  "Backend",
+  "Authentication",
+  "Performance",
+  "Database",
+  "Security",
+  "API",
+  "Deployment"
+];
+
+const PRIORITIES = [
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "CRITICAL"
+];
+
+const STATUSES = [
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED"
+];
 
 const IssueDetails = () => {
 
@@ -41,6 +69,21 @@ const IssueDetails = () => {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [editing, setEditing] =
+    useState(false);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [form, setForm] =
+    useState({
+      title: "",
+      description: "",
+      category: CATEGORIES[0],
+      priority: PRIORITIES[1],
+      status: STATUSES[0]
+    });
 
   // LOAD ISSUES
   useEffect(() => {
@@ -90,6 +133,52 @@ const IssueDetails = () => {
 
     }, [issues, id]);
 
+  const role =
+    String(user?.role || "")
+      .toUpperCase();
+
+  const canEditIssue =
+    role === "ADMIN" ||
+    String(issue?.createdBy) === String(user?.id);
+
+  const canVerifyIssue =
+    role === "ADMIN" ||
+    role === "TESTER";
+
+  const canUpdateStatus =
+    canEditIssue ||
+    canVerifyIssue;
+
+  const canDeleteIssue =
+    canEditIssue ||
+    canVerifyIssue;
+
+  useEffect(() => {
+
+    if(issue){
+
+      setForm({
+        title: issue.title || "",
+        description: issue.description || "",
+        category: issue.category || CATEGORIES[0],
+        priority: issue.priority || PRIORITIES[1],
+        status: issue.status || STATUSES[0]
+      });
+    }
+
+  }, [issue]);
+
+  const handleFormChange = (
+    key,
+    value
+  ) => {
+
+    setForm(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   // UPDATE STATUS
   const handleStatusClick = async (
     status
@@ -103,6 +192,15 @@ const IssueDetails = () => {
 
         {
           status
+        },
+
+        {
+          headers: {
+            Token:
+              localStorage.getItem(
+                "token"
+              ) || ""
+          }
         }
       );
 
@@ -115,6 +213,77 @@ const IssueDetails = () => {
     } catch(error) {
 
       console.log(error);
+    }
+  };
+
+  // SAVE EDIT
+  const handleSave = async () => {
+
+    if(
+      !form.title.trim() ||
+      !form.description.trim()
+    ){
+
+      alert(
+        "Title and description are required"
+      );
+
+      return;
+    }
+
+    try {
+
+      setSaving(true);
+
+      const response =
+        await axios.put(
+
+          `http://127.0.0.1:8000/authservice/updateissue/${issue.id}`,
+
+          {
+            ...form,
+            updatedBy: user?.id
+          },
+
+          {
+            headers: {
+              Token:
+                localStorage.getItem(
+                  "token"
+                ) || ""
+            }
+          }
+        );
+
+      if(response.data.code === 200){
+
+        alert(
+          "Issue Updated"
+        );
+
+        setEditing(false);
+
+        getIssues();
+
+      } else {
+
+        alert(
+          response.data.message ||
+          "Issue update failed"
+        );
+      }
+
+    } catch(error) {
+
+      console.log(error);
+
+      alert(
+        "Issue update failed"
+      );
+
+    } finally {
+
+      setSaving(false);
     }
   };
 
@@ -133,7 +302,16 @@ const IssueDetails = () => {
 
         await axios.delete(
 
-          `http://127.0.0.1:8000/authservice/deleteissue/${issue.id}`
+          `http://127.0.0.1:8000/authservice/deleteissue/${issue.id}`,
+
+          {
+            headers: {
+              Token:
+                localStorage.getItem(
+                  "token"
+                ) || ""
+            }
+          }
         );
 
         alert(
@@ -206,20 +384,81 @@ const IssueDetails = () => {
 
         </Link>
 
-        {user?.role === "ADMIN" && (
+        {(canEditIssue || canDeleteIssue) && (
 
-          <button
+          <div className="flex items-center gap-3">
 
-            onClick={handleDelete}
+            {canEditIssue && editing ? (
 
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400"
-          >
+              <>
 
-            <Trash2 size={14} />
+                <button
 
-            Delete
+                  onClick={() =>
+                    setEditing(false)
+                  }
 
-          </button>
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300"
+                >
+
+                  <X size={14} />
+
+                  Cancel
+
+                </button>
+
+                <button
+
+                  onClick={handleSave}
+
+                  disabled={saving}
+
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-primary text-white"
+                >
+
+                  <Save size={14} />
+
+                  {saving ? "Saving" : "Save"}
+
+                </button>
+
+              </>
+
+            ) : canEditIssue ? (
+
+              <button
+
+                onClick={() =>
+                  setEditing(true)
+                }
+
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300"
+              >
+
+                <Edit3 size={14} />
+
+                Edit
+
+              </button>
+            ) : null}
+
+            {canDeleteIssue && (
+
+              <button
+
+                onClick={handleDelete}
+
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400"
+              >
+
+                <Trash2 size={14} />
+
+                Delete
+
+              </button>
+            )}
+
+          </div>
         )}
 
       </div>
@@ -232,29 +471,150 @@ const IssueDetails = () => {
 
           <div className="space-y-2">
 
-            <h1 className="text-3xl font-bold text-white">
+            {editing ? (
+
+              <input
+
+                value={form.title}
+
+                onChange={(e) =>
+                  handleFormChange(
+                    "title",
+                    e.target.value
+                  )
+                }
+
+                className="w-full bg-brand-dark/40 border border-white/10 rounded-lg px-4 py-3 text-2xl font-bold text-white"
+              />
+
+            ) : (
+
+              <h1 className="text-3xl font-bold text-white">
 
               {issue.title}
 
-            </h1>
+              </h1>
+            )}
 
-            <p className="text-gray-400">
+            {editing ? (
 
-              {issue.category}
+              <select
 
-            </p>
+                value={form.category}
+
+                onChange={(e) =>
+                  handleFormChange(
+                    "category",
+                    e.target.value
+                  )
+                }
+
+                className="bg-brand-dark/40 border border-white/10 rounded-lg px-3 py-2 text-gray-200"
+              >
+
+                {CATEGORIES.map(category => (
+
+                  <option
+                    key={category}
+                    value={category}
+                  >
+
+                    {category}
+
+                  </option>
+                ))}
+
+              </select>
+
+            ) : (
+
+              <p className="text-gray-400">
+
+                {issue.category}
+
+              </p>
+            )}
 
           </div>
 
           <div className="flex items-center gap-3">
 
-            <StatusBadge
-              status={issue.status}
-            />
+            {editing ? (
 
-            <PriorityBadge
-              priority={issue.priority}
-            />
+              <>
+
+                <select
+
+                  value={form.status}
+
+                  onChange={(e) =>
+                    handleFormChange(
+                      "status",
+                      e.target.value
+                    )
+                  }
+
+                  className="bg-brand-dark/40 border border-white/10 rounded-lg px-3 py-2 text-gray-200"
+                >
+
+                  {STATUSES.map(status => (
+
+                    <option
+                      key={status}
+                      value={status}
+                    >
+
+                      {status}
+
+                    </option>
+                  ))}
+
+                </select>
+
+                <select
+
+                  value={form.priority}
+
+                  onChange={(e) =>
+                    handleFormChange(
+                      "priority",
+                      e.target.value
+                    )
+                  }
+
+                  className="bg-brand-dark/40 border border-white/10 rounded-lg px-3 py-2 text-gray-200"
+                >
+
+                  {PRIORITIES.map(priority => (
+
+                    <option
+                      key={priority}
+                      value={priority}
+                    >
+
+                      {priority}
+
+                    </option>
+                  ))}
+
+                </select>
+
+              </>
+
+            ) : (
+
+              <>
+
+                <StatusBadge
+                  status={issue.status}
+                />
+
+                <PriorityBadge
+                  priority={issue.priority}
+                />
+
+              </>
+            )}
 
           </div>
 
@@ -263,16 +623,37 @@ const IssueDetails = () => {
         {/* DESCRIPTION */}
         <div className="p-5 rounded-xl bg-brand-dark/30 border border-white/10">
 
-          <p className="text-gray-300 leading-relaxed">
+          {editing ? (
 
-            {issue.description}
+            <textarea
 
-          </p>
+              rows={6}
+
+              value={form.description}
+
+              onChange={(e) =>
+                handleFormChange(
+                  "description",
+                  e.target.value
+                )
+              }
+
+              className="w-full bg-brand-dark/40 border border-white/10 rounded-lg px-4 py-3 text-gray-200"
+            />
+
+          ) : (
+
+            <p className="text-gray-300 leading-relaxed">
+
+              {issue.description}
+
+            </p>
+          )}
 
         </div>
 
         {/* STATUS CONTROLS */}
-        {user?.role === "ADMIN" && (
+        {canUpdateStatus && !editing && (
 
           <div className="space-y-3 border-t border-white/10 pt-5">
 
@@ -284,12 +665,7 @@ const IssueDetails = () => {
 
             <div className="flex flex-wrap gap-3">
 
-              {[
-                'OPEN',
-                'IN_PROGRESS',
-                'RESOLVED',
-                'CLOSED'
-              ].map(status => (
+              {STATUSES.map(status => (
 
                 <button
 

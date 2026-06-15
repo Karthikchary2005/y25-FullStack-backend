@@ -148,7 +148,19 @@ export const IssueList = () => {
 
       ) {
 
-        return b.id - a.id;
+        return (
+          new Date(
+            b.createdAt ||
+            b.createdat ||
+            0
+          )
+          -
+          new Date(
+            a.createdAt ||
+            a.createdat ||
+            0
+          )
+        );
       }
 
       // OLDEST
@@ -158,7 +170,19 @@ export const IssueList = () => {
 
       ) {
 
-        return a.id - b.id;
+        return (
+          new Date(
+            a.createdAt ||
+            a.createdat ||
+            0
+          )
+          -
+          new Date(
+            b.createdAt ||
+            b.createdat ||
+            0
+          )
+        );
       }
 
       // PRIORITY

@@ -15,4 +15,9 @@ public interface issuesRepository
     List<issues> findByCreatedBy(
             Long createdBy
     );
+
+    // DELETE ISSUES CREATED BY USER
+    void deleteByCreatedBy(
+            Long createdBy
+    );
 }

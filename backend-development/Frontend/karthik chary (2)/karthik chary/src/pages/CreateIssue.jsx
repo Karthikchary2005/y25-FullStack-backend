@@ -206,7 +206,16 @@ const CreateIssue = () => {
 
           "http://127.0.0.1:8000/authservice/createissue",
 
-          data
+          data,
+
+          {
+            headers: {
+              Token:
+                localStorage.getItem(
+                  "token"
+                ) || ""
+            }
+          }
         );
 
       console.log(

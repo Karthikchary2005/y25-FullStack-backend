@@ -6,8 +6,12 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import kth.models.issues;
 import kth.models.users;
+import kth.repository.issuesRepository;
+import kth.repository.statusRepository;
 import kth.repository.usersRepository;
 
 @Service
@@ -15,6 +19,12 @@ public class userService {
 
     @Autowired
     usersRepository UR;
+
+    @Autowired
+    issuesRepository IR;
+
+    @Autowired
+    statusRepository SR;
 
     @Autowired
     jwtService JWT;
@@ -262,6 +272,7 @@ public class userService {
     }
 
     // DELETE USER
+    @Transactional
     public Object deleteUser(
             Long id
     ) {
@@ -270,6 +281,33 @@ public class userService {
                 new HashMap<>();
 
         try {
+
+            if(!UR.existsById(id)) {
+
+                response.put(
+                        "code",
+                        404
+                );
+
+                response.put(
+                        "message",
+                        "User Not Found"
+                );
+
+                return response;
+            }
+
+            List<issues> userIssues =
+                    IR.findByCreatedBy(id);
+
+            for(issues issue : userIssues) {
+
+                SR.deleteByIssueId(
+                        issue.getId()
+                );
+            }
+
+            IR.deleteByCreatedBy(id);
 
             UR.deleteById(id);
 

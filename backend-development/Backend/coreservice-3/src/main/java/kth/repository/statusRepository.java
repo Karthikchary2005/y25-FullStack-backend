@@ -12,4 +12,8 @@ public interface statusRepository
     status findByIssueId(
             Long issueId
     );
+
+    void deleteByIssueId(
+            Long issueId
+    );
 }

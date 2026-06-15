@@ -92,6 +92,54 @@ const AdminPanel = () => {
     }
   };
 
+  // DELETE USER
+  const deleteUser = async (
+    userId
+  ) => {
+
+    if(
+      !window.confirm(
+        "Delete this user?"
+      )
+    ){
+
+      return;
+    }
+
+    try {
+
+      const response =
+        await axios.delete(
+
+          `http://127.0.0.1:8000/authservice/deleteuser/${userId}`
+        );
+
+      if(response.data.code === 200){
+
+        alert(
+          "User Deleted"
+        );
+
+        getUsers();
+
+      } else {
+
+        alert(
+          response.data.message ||
+          "User delete failed"
+        );
+      }
+
+    } catch(error) {
+
+      console.log(error);
+
+      alert(
+        "User delete failed"
+      );
+    }
+  };
+
   // UPDATE STATUS
   const updateStatus = async (
     issueId,
@@ -246,9 +294,36 @@ const AdminPanel = () => {
 
               </div>
 
-              <div className="text-xs text-brand-secondary">
+              <div className="flex items-center gap-3">
 
-                {usr.role}
+                <div className="text-xs text-brand-secondary">
+
+                  {usr.role}
+
+                </div>
+
+                <button
+
+                  onClick={() =>
+                    deleteUser(usr.id)
+                  }
+
+                  disabled={
+                    String(usr.id) === String(user?.id)
+                  }
+
+                  className="p-2 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+
+                  title={
+                    String(usr.id) === String(user?.id)
+                      ? "You cannot delete your own account while logged in"
+                      : "Delete user"
+                  }
+                >
+
+                  <Trash2 size={14} />
+
+                </button>
 
               </div>
 
